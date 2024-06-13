@@ -10,45 +10,51 @@ export default function CardLineChart() {
   const [humidityData, setHumidityData] = useState<any[]>([]);
   const [n2oData, setN2oData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [shortRange, setShortRange] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [shortRange, setShortRange] = useState(true);
+
+  const fetchData = async () => {
+    setLoading(true); // Set loading to true when fetching data
+    try {
+      const sound = await getSound(shortRange ? 10 : 1440);
+      const temp = await getTemperature(shortRange ? 10 : 1440);
+
+      const formattedSoundData = [["Time", "Sound", { role: "style" }], ...sound['results'].map((item: any) => [new Date(item.interval), item.avg_sound, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
+      const formattedTemperatureData = [["Time", "Temperature", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_temperature, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
+      const formattedCo2Data = [["Time", "CO2", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_co, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
+      const formattedHumidityData = [["Time", "Humidity", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_humidity, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
+      const formattedN2oData = [["Time", "N2O", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_nitrogen_dioxide, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
+
+      setSoundData([formattedSoundData[0], ...formattedSoundData.slice(1).reverse()]);
+      setTemperatureData([formattedTemperatureData[0], ...formattedTemperatureData.slice(1).reverse()]);
+      setCo2Data([formattedCo2Data[0], ...formattedCo2Data.slice(1).reverse()]);
+      setHumidityData([formattedHumidityData[0], ...formattedHumidityData.slice(1).reverse()]);
+      setN2oData([formattedN2oData[0], ...formattedN2oData.slice(1).reverse()]);
+
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("An unknown error occurred");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-      const fetchData = async () => {
-        setLoading(true);
-      try {
-        const sound = await getSound(shortRange ? 10 : 1440);
-        const temp = await getTemperature(shortRange ? 10 : 1440);
+    fetchData(); // Fetch data initially
 
-        const formattedSoundData = [["Time", "Sound", { role: "style" }], ...sound['results'].map((item: any) => [new Date(item.interval), item.avg_sound, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
-        const formattedTemperatureData = [["Time", "Temperature", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_temperature, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
-        const formattedCo2Data = [["Time", "CO2", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_co, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
-        const formattedHumidityData = [["Time", "Humidity", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_humidity, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
-        const formattedN2oData = [["Time", "N2O", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_nitrogen_dioxide, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
+    const interval = setInterval(() => {
+      fetchData(); // Fetch data every minute
+    }, 60000); // 60000 milliseconds = 1 minute
 
-        setSoundData([formattedSoundData[0], ...formattedSoundData.slice(1).reverse()]);
-        setTemperatureData([formattedTemperatureData[0], ...formattedTemperatureData.slice(1).reverse()]);
-        setCo2Data([formattedCo2Data[0], ...formattedCo2Data.slice(1).reverse()]);
-        setHumidityData([formattedHumidityData[0], ...formattedHumidityData.slice(1).reverse()]);
-        setN2oData([formattedN2oData[0], ...formattedN2oData.slice(1).reverse()]);
-
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError("An unknown error occurred");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    return () => clearInterval(interval); // Clear interval on component unmount
   }, [shortRange]);
-    
-    const handleShortRangeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setShortRange(event.target.checked);
-    };
 
+  const handleShortRangeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setShortRange(event.target.checked);
+  };
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
@@ -82,8 +88,8 @@ export default function CardLineChart() {
       slantedTextAngle: 45,
       ticks: soundTicks,
     },
-      backgroundColor: "transparent",
-    pointSize:1,
+    backgroundColor: "transparent",
+    pointSize: 1,
   };
 
   return (
@@ -91,8 +97,8 @@ export default function CardLineChart() {
       <div className="rounded-t mb-0 px-4 py-3 bg-transparent">
         <div className="flex flex-wrap items-center">
           <div className="relative w-full max-w-full flex-grow flex-1">
-            <h2 className="text-l font-semibold">OverView</h2>
-            short range <input type="checkbox" checked={shortRange} onChange={() => setShortRange(!shortRange)} />
+            <h2 className="text-l font-semibold">Overview</h2>
+            short range <input type="checkbox" checked={shortRange} onChange={handleShortRangeChange} />
           </div>
         </div>
       </div>
