@@ -10,13 +10,15 @@ export default function CardLineChart() {
   const [humidityData, setHumidityData] = useState<any[]>([]);
   const [n2oData, setN2oData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [shortRange, setShortRange] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+      const fetchData = async () => {
+        setLoading(true);
       try {
-        const sound = await getSound();
-        const temp = await getTemperature();
+        const sound = await getSound(shortRange ? 10 : 1440);
+        const temp = await getTemperature(shortRange ? 10 : 1440);
 
         const formattedSoundData = [["Time", "Sound", { role: "style" }], ...sound['results'].map((item: any) => [new Date(item.interval), item.avg_sound, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
         const formattedTemperatureData = [["Time", "Temperature", { role: "style" }], ...temp['results'].map((item: any) => [new Date(item.interval), item.avg_temperature, item.is_anomaly ? 'point { size: 5; fill-color: red; }' : 'point { size: 0; fill-color: #3182ce; }'])];
@@ -41,7 +43,12 @@ export default function CardLineChart() {
       }
     };
     fetchData();
-  }, []);
+  }, [shortRange]);
+    
+    const handleShortRangeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setShortRange(event.target.checked);
+    };
+
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
@@ -85,6 +92,7 @@ export default function CardLineChart() {
         <div className="flex flex-wrap items-center">
           <div className="relative w-full max-w-full flex-grow flex-1">
             <h2 className="text-l font-semibold">OverView</h2>
+            short range <input type="checkbox" checked={shortRange} onChange={() => setShortRange(!shortRange)} />
           </div>
         </div>
       </div>
